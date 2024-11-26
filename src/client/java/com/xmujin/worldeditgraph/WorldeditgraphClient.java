@@ -4,15 +4,22 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.ClientModInitializer;
 
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
-import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
+
+
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
+import net.minecraft.client.render.debug.DebugRenderer;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 
+import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +28,21 @@ import net.minecraft.registry.Registries;
 
 
 public class WorldeditgraphClient implements ClientModInitializer {
+	// 第一次选中的方块坐标
+	public BlockPos firstSelectedPos;
+	// 第二次选中的方块坐标
+	public BlockPos secondSelectedPos;
+
+	public boolean isFirstSelected = false;
+
+	public boolean isSecondSelected = false;
+
+	// 是否是使用的木斧
+	public boolean isWoodenAxe = false;
+
+
 	public float totalTickDelta = 0;
+
 
 	public static final Logger LOGGER = LoggerFactory.getLogger("MyModName");
 
@@ -31,12 +52,7 @@ public class WorldeditgraphClient implements ClientModInitializer {
 	public void onInitializeClient() {
 
 
-		UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
 
-			client.player.sendMessage(Text.of("服了你了!a"), false);
-
-			return ActionResult.PASS;
-		});
 
 
 
@@ -44,30 +60,50 @@ public class WorldeditgraphClient implements ClientModInitializer {
 
 
 		AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
-
 			if (world.isClient) {
-				client.player.sendMessage(Text.of("泥好!"), false);
 				var itemStack = player.getStackInHand(hand);
-				Item item = itemStack.getItem();
-				item.getName();
-
-				if (!itemStack.isEmpty()) {
-					// 获取物品的唯一标识符
+				if(!itemStack.isEmpty()) {
+					Item item = itemStack.getItem(); // 获取项
 					Identifier itemId = Registries.ITEM.getId(item);
-					player.sendMessage(Text.of("当前物品 ID: " + itemId.toString()), false);
-
-					//player.sendMessage(Text.of("当前物品 ID: " + item.getTranslationKey()), false);
+					if (itemId.toString().equals("minecraft:wooden_axe")) {
+						isFirstSelected = true;
+						firstSelectedPos = pos;
+						player.sendMessage(Text.of("选中了第一个点：" + firstSelectedPos.toString()), false);
+					} else {
+						isFirstSelected = false;
+					}
 				} else {
-					player.sendMessage(Text.of("当前没有物品"), false);
+					isFirstSelected = false;
 				}
 			}
 			return ActionResult.PASS;
 		});
 
+		UseItemCallback.EVENT.register((player, world, hand) -> {
+			if (world.isClient) {
+				var itemStack = player.getStackInHand(hand);
+				if(!itemStack.isEmpty()) {
+					Item item = itemStack.getItem(); // 获取项
+					Identifier itemId = Registries.ITEM.getId(item);
+					if (itemId.toString().equals("minecraft:wooden_axe")) {
+						// 获取玩家视线中的目标
+						HitResult hitResult = client.crosshairTarget;
+						if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
+							isSecondSelected = true;
+							BlockHitResult blockHitResult = (BlockHitResult) hitResult;
+							secondSelectedPos = blockHitResult.getBlockPos();
+							player.sendMessage(Text.of("选中了第二个点：" + secondSelectedPos.toString()), false);
+						}
 
-
-
-
+					} else {
+						isSecondSelected = false;
+					}
+				} else {
+					isSecondSelected = false;
+				}
+			}
+			return TypedActionResult.pass(ItemStack.EMPTY);
+		});
 
 
 		// This entrypoint is suitable for setting up client-specific logic, such as rendering.
@@ -120,8 +156,27 @@ public class WorldeditgraphClient implements ClientModInitializer {
 //
 //		});
 
+		//DebugRenderer.drawBox();
+
+
 
 		WorldRenderEvents.BEFORE_DEBUG_RENDER.register(context -> {
+			//Todo 检测手里是否拿着的是木斧，如果不是，则返回
+
+
+
+			//Todo 初始化变量以供渲染
+
+
+			//Todo 渲染边框
+
+
+
+			//Todo 渲染结束的处理
+
+
+
+
 			MinecraftClient mc = MinecraftClient.getInstance();
 			Camera camera = mc.gameRenderer.getCamera();
 			BlockPos blockPos = mc.player.getBlockPos();
