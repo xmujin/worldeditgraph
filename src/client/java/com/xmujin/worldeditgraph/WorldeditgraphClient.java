@@ -33,7 +33,7 @@ public class WorldeditgraphClient implements ClientModInitializer {
 
 		UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
 
-			client.player.sendMessage(Text.of("服了你了!"), false);
+			client.player.sendMessage(Text.of("服了你了!a"), false);
 
 			return ActionResult.PASS;
 		});
